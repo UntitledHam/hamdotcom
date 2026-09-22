@@ -1,0 +1,41 @@
+body {
+    margin: 0;
+    background-color: black;
+    color: white;
+}
+
+p {
+    color: blueviolet;
+}
+
+.container {
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-text {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    white-space: pre;
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.2);
+    z-index: 1;
+    font-family: "Lilex", monospace;
+    pointer-events: none;
+    user-select: none;
+}
+.box-field { 
+    display: grid;
+    place-items: center;
+    height: 100vh; 
+    position: relative;
+    z-index: 2;
+}
+.center-box {
+    background-color: black;
+}
