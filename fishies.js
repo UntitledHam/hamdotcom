@@ -1,15 +1,41 @@
 const FISH = "><>"
+const BACKWARDS_FISH = "<><"
+
 const fishes = [];
+let background_text;
+let gridSize = [0, 0];
+
+let lastTimeStamp = 0;
 
 class Fish {
     constructor(coordinates) {
         this.x = coordinates[0];
         this.y = coordinates[1];
         this.sprite = FISH;
+        this.forwards = true;
     }
 
     getCoords() {
         return [this.x, this.y];
+    }
+
+    updatePosition(newX, newY) {
+        this.x = newX;
+        this.y = newY;
+    }
+
+    changeDirection(forwards) {
+        this.sprite = forwards ? FISH : BACKWARDS_FISH;
+        this.forwards = forwards;
+    }
+
+    move(dx, dy) {
+        this.updatePosition(this.x + dx, this.y + dy);
+        if (dx > 0) {
+            this.changeDirection(true);
+        } else if (dx < 0) {
+            this.changeDirection(false);
+        }
     }
 }
 
@@ -31,10 +57,8 @@ function getAsciiGridSize(container) {
     const { width, height } = probe.getBoundingClientRect();
     probe.remove();
   
-    return {
-      columns: Math.ceil(container.clientWidth / width),
-      rows: Math.ceil(container.clientHeight / height),
-    };
+    const lineHeight = parseFloat(style.lineHeight) || height;
+    return [Math.ceil(container.clientWidth / width), Math.ceil(container.clientHeight / lineHeight)];
   }
 
 function generateBoardFromString(str) {
@@ -68,31 +92,68 @@ function drawFishes(board) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const background_text = document.querySelector(".bg-text");
-    let board;
-    try {
-        board = await loadBoardFromFile("board.txt");
-    } catch (error) {
-        console.error("Error loading board from file:", error);
-        background_text.textContent = "";
-        return;
+function calculateMove(fish) {
+    const amount_to_move = 1;
+    if (fish.x >= gridSize[0] + 20) {
+        return [-amount_to_move, 0];
+    }
+    else if (fish.x <= -20) {
+        return [amount_to_move, 0];
+    }
+    
+    if (fish.forwards) {
+        return [amount_to_move, 0];
+    } else {
+        return [-amount_to_move, 0];
+    }
+}
+
+function moveFishies() {
+    for (const fish of fishes) {
+        const [dx, dy] = calculateMove(fish);
+        fish.move(dx, dy);
+    }
+}
+
+function render(resolution) {
+    const board = Array.from({length: resolution[1]}, () => Array(resolution[0]).fill(" "));
+    drawFishes(board);
+
+    background_text.textContent = board.map(row => row.join("")).join('\n');
+    
+    return board;
+}
+
+function resizeGrid() {
+    gridSize = getAsciiGridSize(background_text);
+}
+
+function renderLoop(currentTime) {
+    if (lastTimeStamp === 0) {
+        lastTimeStamp = currentTime;
     }
 
-    function render() {
-        const { columns, rows } = getAsciiGridSize(background_text);
-        console.log(`Grid: (${columns},${rows})`);
-        const board = Array.from({length: rows}, () => Array(columns).fill(" "));
+    const deltaTime = currentTime - lastTimeStamp;
 
-        fishes.length = 0; // Clear the fishes array
-        fishes.push(new Fish([0, 0]));
-        fishes.push(new Fish([10, 10]));
-
-        drawFishes(board);
-
-        background_text.textContent = board.map(row => row.join("")).join('\n');
+    if (deltaTime > 20) {
+        lastTimeStamp = currentTime;
+        moveFishies();
     }
 
-    new ResizeObserver(render).observe(background_text);
-    document.fonts.ready.then(render);
+    render(gridSize);
+    requestAnimationFrame(renderLoop);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    background_text = document.querySelector(".bg-text");
+    fishes.push(new Fish([0, 0]));
+    fishes.push(new Fish([10, 10]));
+    fishes.push(new Fish([-10, 20]));
+
+    resizeGrid();
+
+    new ResizeObserver(resizeGrid).observe(background_text);
+    document.fonts.ready.then(resizeGrid);
+
+    requestAnimationFrame(renderLoop);
 });
