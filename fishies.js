@@ -1,5 +1,10 @@
 const FISH = "><>"
 const BACKWARDS_FISH = "<><"
+const DRIFT = 0.6; // Lower means more drift, higher means quicker turns
+const BOTTOMSPEED = 7;
+const TOPSPEED = 10;
+const WANDERMIN = 1; 
+const WANDERMAX = 3;
 
 const fishes = [];
 let background_text;
@@ -7,35 +12,71 @@ let gridSize = [0, 0];
 
 let lastTimeStamp = 0;
 
+
 class Fish {
     constructor(coordinates) {
         this.x = coordinates[0];
         this.y = coordinates[1];
         this.sprite = FISH;
         this.forwards = true;
+
+        this.speed = BOTTOMSPEED + Math.random() * (TOPSPEED - BOTTOMSPEED); // Blue dog from majora's mask will win trust
+        this.vx = this.speed; 
+        this.vy = 0;
+
+        this.targetVx = this.vx;
+        this.targetVy = 0
+        this.wanderTimer = 0;
     }
 
     getCoords() {
-        return [this.x, this.y];
+        // Round movement to ascii display
+        return [Math.round(this.x), Math.round(this.y)];
     }
 
-    updatePosition(newX, newY) {
-        this.x = newX;
-        this.y = newY;
-    }
+    update(dt) {
+        this.wanderTimer -= dt; 
 
-    changeDirection(forwards) {
-        this.sprite = forwards ? FISH : BACKWARDS_FISH;
-        this.forwards = forwards;
-    }
+        if (this.wanderTimer <= 0) {
+            const direction = this.forwards ? 1 : -1; // Get direction as a scaler
+            
+            // Calculate target velocities
+            this.targetVx = direction * this.speed * (0.7 + Math.random() * 0.6);
+            this.targetVy = (Math.random() - 0.5) * 1.5;
 
-    move(dx, dy) {
-        this.updatePosition(this.x + dx, this.y + dy);
-        if (dx > 0) {
-            this.changeDirection(true);
-        } else if (dx < 0) {
-            this.changeDirection(false);
+            // Reset the wander timer
+            this.wanderTimer = WANDERMIN + Math.random() * (WANDERMAX - WANDERMIN);
         }
+
+        // Steer back onto the screen when off the edge 
+        if (this.x > gridSize[0] + 5) {
+            this.targetVx = -this.speed;
+        } else if (this.x < -5) {
+            this.targetVx = this.speed;
+        }
+
+        // Encourage fish to stay within the available rows.
+        if (this.y < 2) {
+            this.targetVy = 1;
+        } else if (this.y > gridSize[1] - 3) {
+            this.targetVy = -1;
+        }
+
+        // Easing the fish
+        const blend = 1 - Math.exp(-DRIFT * dt);
+        this.vx += (this.targetVx - this.vx) * blend; 
+        this.vy += (this.targetVy - this.vy) * blend;
+
+        // Update the fish's position
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+
+        if (Math.abs(this.vx) > 0.2) {
+            this.forwards = this.vx > 0; 
+        }
+
+        this.sprite = this.forwards ? FISH : BACKWARDS_FISH;
+ 
     }
 }
 
@@ -92,26 +133,10 @@ function drawFishes(board) {
     }
 }
 
-function calculateMove(fish) {
-    const amount_to_move = 1;
-    if (fish.x >= gridSize[0] + 20) {
-        return [-amount_to_move, 0];
-    }
-    else if (fish.x <= -20) {
-        return [amount_to_move, 0];
-    }
-    
-    if (fish.forwards) {
-        return [amount_to_move, 0];
-    } else {
-        return [-amount_to_move, 0];
-    }
-}
 
-function moveFishies() {
+function moveFishies(dt) {
     for (const fish of fishes) {
-        const [dx, dy] = calculateMove(fish);
-        fish.move(dx, dy);
+        fish.update(dt);
     }
 }
 
@@ -133,13 +158,10 @@ function renderLoop(currentTime) {
         lastTimeStamp = currentTime;
     }
 
-    const deltaTime = currentTime - lastTimeStamp;
-
-    if (deltaTime > 20) {
-        lastTimeStamp = currentTime;
-        moveFishies();
-    }
-
+    const deltaTime = Math.min(currentTime - lastTimeStamp / 1000, 0.05);
+    lastTimeStamp = currentTime;
+    
+    moveFishies(deltaTime);
     render(gridSize);
     requestAnimationFrame(renderLoop);
 }
@@ -149,6 +171,8 @@ document.addEventListener("DOMContentLoaded", () => {
     fishes.push(new Fish([0, 0]));
     fishes.push(new Fish([10, 10]));
     fishes.push(new Fish([-10, 20]));
+    fishes.push(new Fish([-5, 30]));
+    fishes.push(new Fish([5, 40]));
 
     resizeGrid();
 
