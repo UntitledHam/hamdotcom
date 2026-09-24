@@ -1,8 +1,8 @@
 const FISH = "><>"
 const BACKWARDS_FISH = "<><"
 const DRIFT = 0.6; // Lower means more drift, higher means quicker turns
-const BOTTOMSPEED = 7;
-const TOPSPEED = 10;
+const BOTTOMSPEED = 10;
+const TOPSPEED = 30;
 const WANDERMIN = 1; 
 const WANDERMAX = 3;
 
@@ -158,7 +158,7 @@ function renderLoop(currentTime) {
         lastTimeStamp = currentTime;
     }
 
-    const deltaTime = Math.min(currentTime - lastTimeStamp / 1000, 0.05);
+    const deltaTime = Math.min((currentTime - lastTimeStamp) / 1000, 0.05);
     lastTimeStamp = currentTime;
     
     moveFishies(deltaTime);
@@ -166,15 +166,32 @@ function renderLoop(currentTime) {
     requestAnimationFrame(renderLoop);
 }
 
+function spawnFishes(amount) {
+    const margin = 15;
+
+    for (let i = 0; i < amount; i++) {
+        const x = Math.random() * (gridSize[0] + margin * 2) - margin;
+        const y = Math.random() * Math.max(0, gridSize[1] - 1);
+        const fish = new Fish([x, y]);
+
+        // Offscreen fish swim inward; visible fish face either way.
+        const forwards = x < 0 ? true : x > gridSize[0] - FISH.length ? false : Math.random() < 0.5;
+
+        fish.forwards = forwards;
+        fish.sprite = forwards ? FISH : BACKWARDS_FISH;
+        fish.vx = forwards ? fish.speed : -fish.speed;
+        fish.targetVx = fish.vx;
+
+        fishes.push(fish);
+    }
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
     background_text = document.querySelector(".bg-text");
-    fishes.push(new Fish([0, 0]));
-    fishes.push(new Fish([10, 10]));
-    fishes.push(new Fish([-10, 20]));
-    fishes.push(new Fish([-5, 30]));
-    fishes.push(new Fish([5, 40]));
-
     resizeGrid();
+
+    spawnFishes(100);
 
     new ResizeObserver(resizeGrid).observe(background_text);
     document.fonts.ready.then(resizeGrid);
