@@ -9,6 +9,7 @@ const WANDERMAX = 3;
 const fishes = [];
 let background_text;
 let gridSize = [0, 0];
+let backgroundRows = [];
 
 let lastTimeStamp = 0;
 
@@ -144,13 +145,23 @@ function render(resolution) {
     const board = Array.from({length: resolution[1]}, () => Array(resolution[0]).fill(" "));
     drawFishes(board);
 
-    background_text.textContent = board.map(row => row.join("")).join('\n');
+    board.forEach((row, index) => {
+        backgroundRows[index].textContent = row.join("");
+    });
     
     return board;
 }
 
 function resizeGrid() {
     gridSize = getAsciiGridSize(background_text);
+    // Slightly tuck in the top and bottom rows to suggest curved CRT glass.
+    backgroundRows = Array.from({ length: gridSize[1] }, (_, index) => {
+        const row = document.createElement("span");
+        const edge = gridSize[1] > 1 ? (index / (gridSize[1] - 1)) * 2 - 1 : 0;
+        row.style.transform = `scaleX(${1 - 0.065 * edge * edge})`;
+        return row;
+    });
+    background_text.replaceChildren(...backgroundRows);
 }
 
 function renderLoop(currentTime) {
