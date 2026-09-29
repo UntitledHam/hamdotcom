@@ -5,7 +5,11 @@ body {
 }
 
 p {
-    color: blueviolet;
+    color: white;
+}
+
+a {
+    color: rgb(255, 148, 255);
 }
 
 .container {
@@ -37,6 +41,8 @@ p {
     z-index: 2;
 }
 .center-box {
-    background-color: black;
-    fill-opacity: 30%;
+    background-color: rgb(66, 70, 70);
+    padding: 2em;
+    border-radius: 1em;
 }
+
