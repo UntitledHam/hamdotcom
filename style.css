@@ -63,6 +63,17 @@ a {
     position: relative;
     z-index: 2;
 }
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    text-align: left;
+    padding: 1em;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2;
+}
+
 .center-box {
     background-color: rgb(66, 70, 70);
     padding: 2em;
